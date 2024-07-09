@@ -1,0 +1,48 @@
+name: GCC Linux Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        BUILD_TYPE: [Release] 
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+           
+    - name: Python setup
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+        architecture: 'x64'
+    
+    - name: Install GCC13, Conan2, CMake
+      run: |
+        sudo apt-get install g++-13
+        sudo cp /usr/bin/gcc-13 /usr/bin/cc
+        sudo cp /usr/bin/g++-13 /usr/bin/cpp
+        sudo cp /usr/bin/g++-13 /usr/bin/g++
+        python -m pip install conan cmake
+
+    - name: Cache Conan packages
+      run: |
+        conan profile detect --force
+        conan install ${{github.workspace}} --output-folder=${{github.workspace}}/build --build=missing
+        echo 'Conanbuild sh'
+        source ${{github.workspace}}/build/conanbuild.sh
+        echo 'Conanbuild sh ended'
+        cmake --preset conan-release
+        ls ${{github.workspace}}/build
+
+    - name: CMake
+      run: | 
+        cd ${{github.workspace}}/build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}}
+        cmake --build .

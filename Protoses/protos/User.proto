@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+message UserLogin{
+    string login=1;
+    string password=2;
+}
+
+message UserInfo{
+    string login=1;
+}
+
+enum UserAction {
+    JOINED=0;
+    LEAVED=1;
+    UPDATED=2;
+}
+
+message UserActionInfo {
+    UserAction action=1;
+    UserInfo user=2;   
+}
+
+message UsersInfo {
+    repeated UserInfo users = 1;
+}
+
+service UserAuthorization {
+    rpc Connect(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+    rpc Disconnect(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+    rpc Ping(stream google.protobuf.Empty) returns(google.protobuf.Empty) {}
+    rpc GetUsers(google.protobuf.Empty) returns(UsersInfo) {}
+}

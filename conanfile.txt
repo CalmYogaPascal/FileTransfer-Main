@@ -1,0 +1,13 @@
+[requires]
+boost/1.83.0
+cryptopp/8.7.0
+asio-grpc/2.7.0
+grpc/1.54.3
+libalsa/1.2.10
+protobuf/3.21.12
+
+[generators]
+CMakeDeps
+CMakeToolchain
+[layout]
+cmake_layout

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "protos/User.proto";
+
+message File {
+    string Name = 1;
+    uint64 FileSize = 2;
+    int64 LastDate = 3;
+}
+
+message Directory {
+    repeated File file = 1;
+}
+
+message ClientFileSystem {
+    UserInfo user = 1;
+    Directory RootDirectory = 2;
+}
+
+service UserFileSystemInfo {
+    rpc SendFileInfo(stream Directory) returns (stream google.protobuf.Empty) {}
+    rpc Request(UserInfo) returns (Directory) {}
+}

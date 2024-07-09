@@ -1,0 +1,5 @@
+venv/
+build/
+.vscode/
+*.pb.cc
+*.pb.h
