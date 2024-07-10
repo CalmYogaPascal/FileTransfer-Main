@@ -25,10 +25,7 @@ jobs:
     
     - name: Install GCC13, Conan2, CMake
       run: |
-        sudo apt-get install g++-13
-        sudo cp /usr/bin/gcc-13 /usr/bin/cc
-        sudo cp /usr/bin/g++-13 /usr/bin/cpp
-        sudo cp /usr/bin/g++-13 /usr/bin/g++
+        sudo apt-get install clang-18 build-essential
         python -m pip install conan cmake
 
     - name: Cache Conan packages
