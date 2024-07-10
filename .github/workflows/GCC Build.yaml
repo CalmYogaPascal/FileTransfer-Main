@@ -25,7 +25,7 @@ jobs:
     
     - name: Install GCC13, Conan2, CMake
       run: |
-        sudo apt-get install clang-18 build-essential
+        sudo apt-get install clang build-essential
         python -m pip install conan cmake
 
     - name: Cache Conan packages
