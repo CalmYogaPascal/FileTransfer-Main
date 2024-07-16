@@ -1,10 +1,16 @@
 cmake_minimum_required (VERSION 3.15)
 project(GLobalProject)
-include("conan_toolchain.cmake")
 
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_COMPILER /usr/bin/clang-18)
-set(CMAKE_CXX_COMPILER /usr/bin/clang++-18)
+
+include("build/build/${CMAKE_BUILD_TYPE}/generators/conan_toolchain.cmake")
+
+SET(CMAKE_C_COMPILER /usr/bin/cc)
+SET(CMAKE_CXX_COMPILER /usr/bin/g++)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
+
+
 
 if(MSVC)
   add_compile_options(PRIVATE /W4 /WX)

@@ -11,7 +11,7 @@ message File {
 }
 
 message Directory {
-    repeated File file = 1;
+    repeated File files = 1;
 }
 
 message ClientFileSystem {
@@ -20,6 +20,6 @@ message ClientFileSystem {
 }
 
 service UserFileSystemInfo {
-    rpc SendFileInfo(stream Directory) returns (stream google.protobuf.Empty) {}
-    rpc Request(UserInfo) returns (Directory) {}
+    rpc StreamDirectory(stream Directory) returns (stream google.protobuf.Empty) {}
+    rpc RequestFilesFromUser(UserInfo) returns (Directory) {}
 }

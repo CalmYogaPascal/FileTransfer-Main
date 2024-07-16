@@ -5,64 +5,31 @@
 #include "Common.hpp"
 #include "Transfer.hpp"
 #include "User.hpp"
+#include "Files.hpp"
 
-namespace UserFileSystemInfoOp {
-using SendFileInfoRPC = AwaitableServerRPC<&::UserFileSystemInfo::AsyncService::RequestSendFileInfo>;
-asio::awaitable<void> SendFileInfo(SendFileInfoRPC &ptr) {
-
-  Directory request;
-  google::protobuf::Empty response;
-  while (UserMap.contains(ptr.context().peer())) {
-
-    co_await ptr.read(request);
-    FileMap[ptr.context().peer()] = Directory(request);
-    for (int i = 0; i < request.file_size(); i++) {
-      std::cout << ptr.context().peer() << " __ " << request.file(i).name() << std::endl;
-    }
-    FileRequestMap[ptr.context().peer()] = false;
-    while (FileRequestMap.contains(ptr.context().peer()) && !FileRequestMap[ptr.context().peer()]) {
-
-      agrpc::Alarm alarm{ptr.get_executor().context()};
-      co_await alarm.wait(std::chrono::system_clock::now() + std::chrono::milliseconds(100), asio::use_awaitable);
-    }
-    if (FileRequestMap.contains(ptr.context().peer())) {
-      if (!co_await ptr.write(response)) {
-        co_return;
-      }
-    }
+std::string what(const std::exception_ptr &eptr = std::current_exception()) {
+  if (!eptr) {
+    throw std::bad_exception();
   }
-  if (!UserMap.contains(ptr.context().peer())) {
-    std::cout<<"Canceled send file info"<<ptr.context().peer()<<std::endl;
-    co_await ptr.finish(::grpc::Status::CANCELLED);
-    co_return;
+
+  try {
+    std::rethrow_exception(eptr);
+  } catch (const std::exception &e) {
+    return e.what();
+  } catch (const std::string &e) {
+    return e;
+  } catch (const char *e) {
+    return e;
+  } catch (...) {
+    return "who knows";
   }
-  co_await ptr.write(response, grpc::WriteOptions{}.set_last_message());
-  co_await ptr.finish(grpc::Status::OK);
 }
 
-using FilemapRequestRPC = AwaitableServerRPC<&::UserFileSystemInfo::AsyncService::RequestRequest>;
-asio::awaitable<void> Request(FilemapRequestRPC &ptr, UserInfo request) {
-
-  Directory response;
-  if (!UserMap.contains(ptr.context().peer())) {
-    std::cout<<"Canceled request"<<ptr.context().peer()<<std::endl;
-    co_await ptr.finish_with_error(grpc::Status::CANCELLED);
-    co_return;
+void DefaultHandler(const std::exception_ptr& ex) {
+  if (ex) {
+      std::cout << what(ex) << std::endl;
   }
-
-  FileMap[request.login()] = {};
-  FileRequestMap[request.login()] = true;
-  while (!FileMap[request.login()].has_value()) {
-
-    agrpc::Alarm alarm{ptr.get_executor().context()};
-    co_await alarm.wait(std::chrono::system_clock::now() + std::chrono::seconds(1), asio::use_awaitable);
-  }
-  response.CopyFrom(FileMap[request.login()].value());
-  co_await ptr.finish(response, grpc::Status::OK);
 }
-} // namespace UserFileSystemInfoOp
-// using Channel = asio::experimental::channel<void(boost::system::error_code,
-// FileInfoRPC::Request)>;
 
 int main() {
   std::string server_address("0.0.0.0:50051");
@@ -91,8 +58,10 @@ int main() {
     //     grpc_context, service, UserAuthorization_Ping, asio::detached);
     agrpc::register_awaitable_rpc_handler<Users::GetUsersRPC>(grpc_context, service, Users::GetUsers, asio::detached);
 
-    agrpc::register_awaitable_rpc_handler<UserFileSystemInfoOp::SendFileInfoRPC>(grpc_context, service2, UserFileSystemInfoOp::SendFileInfo, asio::detached);
-    agrpc::register_awaitable_rpc_handler<UserFileSystemInfoOp::FilemapRequestRPC>(grpc_context, service2, UserFileSystemInfoOp::Request, asio::detached);
+    agrpc::register_awaitable_rpc_handler<UserFileSystemInfoOp::SendFileInfoRPC>(grpc_context, service2, UserFileSystemInfoOp::StreamDirectory,
+                                                                                 asio::detached);
+    agrpc::register_awaitable_rpc_handler<UserFileSystemInfoOp::FilemapRequestRPC>(grpc_context, service2, UserFileSystemInfoOp::RequestFilesFromUser,
+                                                                                   asio::detached);
 
     agrpc::register_awaitable_rpc_handler<FileTransferOp::DownloadRPC>(grpc_context, service3, FileTransferOp::Download, asio::detached);
     agrpc::register_awaitable_rpc_handler<FileTransferOp::UploadRPC>(grpc_context, service3, FileTransferOp::Upload, asio::detached);
@@ -101,8 +70,8 @@ int main() {
 
     while (true) {
       std::cout << "Perf" << std::endl;
-      // grpc_context.poll();
-      // std::this_thread::sleep_for(std::chrono::seconds(1));
+      //  grpc_context.poll();
+      //  std::this_thread::sleep_for(std::chrono::seconds(1));
       grpc_context.run_until(std::chrono::system_clock::now() + std::chrono::seconds(5));
     }
   } catch (std::exception &Exc) {
